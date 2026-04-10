@@ -1,20 +1,26 @@
-name: Test OIDC to Databricks
+name: GitHub Actions Demo
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on: workflow_dispatch
 
-on:
-  workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  test:
+  my_script_using_wif:
     runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write
-      contents: read
+    environment: prod
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: https://adb-7405611575591318.18.azuredatabricks.net
+      DATABRICKS_CLIENT_ID: 8b09fa92-7c66-4bef-9752-52a4ee5e9346
 
     steps:
-      - name: Print OIDC Token Claims
-        run: |
-          TOKEN=$(curl -s -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://github.com/vdhiman0810" | jq -r '.value')
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-          echo "$TOKEN" | cut -d '.' -f2 | base64 -d | jq
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Run Databricks CLI commands
+        run: databricks current-user me
