@@ -11,18 +11,16 @@ jobs:
       contents: read
 
     steps:
-      - name: Install Databricks CLI
-        run: pip install databricks-cli
+      - name: Install NEW Databricks CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
-      # ✅ THIS IS THE MISSING PIECE
-      - name: Databricks OIDC Login
+      - name: OIDC Login
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
         run: |
-          databricks auth login \
-            --host $DATABRICKS_HOST \
-            --oauth
+          databricks auth login --host $DATABRICKS_HOST --oauth
 
-      - name: Test Auth
+      - name: Test clusters
         run: |
           databricks clusters list
