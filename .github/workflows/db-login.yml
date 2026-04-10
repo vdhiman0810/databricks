@@ -15,12 +15,13 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
-      - name: OIDC Login
+      - name: Verify CLI
+        run: |
+          databricks -v
+          which databricks
+
+      - name: Test clusters (OIDC auto auth)
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-        run: |
-          databricks auth login --host $DATABRICKS_HOST --oauth
-
-      - name: Test clusters
         run: |
           databricks clusters list
