@@ -1,0 +1,21 @@
+name: Test Login
+
+on: workflow_dispatch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Install CLI
+        run: pip install databricks-cli
+
+      - name: Test Auth
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        run: |
+          databricks clusters list
