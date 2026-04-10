@@ -11,11 +11,18 @@ jobs:
       contents: read
 
     steps:
-      - name: Install CLI
+      - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      - name: Test Auth
+      # ✅ THIS IS THE MISSING PIECE
+      - name: Databricks OIDC Login
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        run: |
+          databricks auth login \
+            --host $DATABRICKS_HOST \
+            --oauth
+
+      - name: Test Auth
         run: |
           databricks clusters list
