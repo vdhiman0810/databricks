@@ -11,17 +11,13 @@ jobs:
       contents: read
 
     steps:
-      - name: Install NEW Databricks CLI
+      - name: Install Databricks CLI
         run: |
           curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
 
-      - name: Verify CLI
-        run: |
-          databricks -v
-          which databricks
-
-      - name: Test clusters (OIDC auto auth)
+      - name: Test Databricks OIDC Auth
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_AUTH_TYPE: github-oidc
         run: |
           databricks clusters list
