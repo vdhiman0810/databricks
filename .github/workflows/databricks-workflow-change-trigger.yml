@@ -1,0 +1,100 @@
+name: Databricks Workflow Change Trigger
+run-name: Trigger Databricks job because a workflow changed
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/**
+      - github-oidc-workflow-audit/dev/**
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-and-run-workflow-audit-job:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLUSTER_ID: ${{ vars.DATABRICKS_CLUSTER_ID }}
+      LOCAL_NOTEBOOK_PATH: github-oidc-workflow-audit/dev/workflow_change_audit.py
+      REMOTE_NOTEBOOK_DIR: /Shared/github-oidc-workflow-audit/dev
+      REMOTE_NOTEBOOK_PATH: /Shared/github-oidc-workflow-audit/dev/workflow_change_audit
+      JOB_NAME: github-oidc-workflow-change-audit-dev
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate GitHub OIDC authentication
+        run: databricks current-user me
+
+      - name: Create workspace folder
+        run: databricks workspace mkdirs "$REMOTE_NOTEBOOK_DIR"
+
+      - name: Import notebook
+        run: databricks workspace import "$REMOTE_NOTEBOOK_PATH" --file "$LOCAL_NOTEBOOK_PATH" --format SOURCE --language PYTHON --overwrite
+
+      - name: Create or update Databricks job
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DATABRICKS_CLUSTER_ID:-}" ]; then
+            echo "DATABRICKS_CLUSTER_ID is not set in the dev GitHub Environment."
+            exit 1
+          fi
+
+          cat > job-settings.json <<EOF
+          {
+            "name": "${JOB_NAME}",
+            "tasks": [
+              {
+                "task_key": "workflow_change_audit",
+                "notebook_task": {
+                  "notebook_path": "${REMOTE_NOTEBOOK_PATH}",
+                  "source": "WORKSPACE",
+                  "base_parameters": {
+                    "trigger_source": "github_workflow_change",
+                    "branch": "${GITHUB_REF_NAME}",
+                    "commit_sha": "${GITHUB_SHA}"
+                  }
+                },
+                "existing_cluster_id": "${DATABRICKS_CLUSTER_ID}"
+              }
+            ],
+            "max_concurrent_runs": 1
+          }
+          EOF
+
+          EXISTING_JOB_ID=$(databricks jobs list -o json | jq -r --arg job_name "${JOB_NAME}" '
+            if type == "array" then
+              .[]
+            else
+              .jobs[]
+            end
+            | select((.settings.name // .name) == $job_name)
+            | .job_id
+          ' | head -n 1)
+
+          if [ -n "${EXISTING_JOB_ID}" ] && [ "${EXISTING_JOB_ID}" != "null" ]; then
+            jq --arg job_id "${EXISTING_JOB_ID}" '{job_id: ($job_id | tonumber), new_settings: .}' job-settings.json > job-reset.json
+            databricks jobs reset --json @job-reset.json
+            echo "JOB_ID=${EXISTING_JOB_ID}" >> "$GITHUB_ENV"
+          else
+            databricks jobs create --json @job-settings.json -o json > job-create-result.json
+            CREATED_JOB_ID=$(jq -r '.job_id' job-create-result.json)
+            echo "JOB_ID=${CREATED_JOB_ID}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Trigger Databricks job
+        run: databricks jobs run-now "$JOB_ID"
