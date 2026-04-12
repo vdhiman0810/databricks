@@ -24,10 +24,13 @@ jobs:
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
       LOCAL_NOTEBOOK_PATH: pipelines/ingestion/dev/01_ingest_customer_orders.py
       LOCAL_DATA_PATH: data/ingestion/dev/customer_orders.csv
+      UC_CATALOG: main
+      UC_SCHEMA: default
+      UC_VOLUME: github_ingestion_dev
+      REMOTE_RAW_DIR: /Volumes/${UC_CATALOG}/${UC_SCHEMA}/${UC_VOLUME}/raw
+      REMOTE_RAW_PATH: /Volumes/${UC_CATALOG}/${UC_SCHEMA}/${UC_VOLUME}/raw/customer_orders.csv
       REMOTE_NOTEBOOK_DIR: /Shared/pipelines/ingestion/dev
       REMOTE_NOTEBOOK_PATH: /Shared/pipelines/ingestion/dev/01_ingest_customer_orders
-      REMOTE_RAW_DIR: dbfs:/tmp/github-ingestion/dev/raw
-      REMOTE_RAW_PATH: dbfs:/tmp/github-ingestion/dev/raw/customer_orders.csv
       JOB_NAME: github-oidc-ingestion-dev
 
     steps:
