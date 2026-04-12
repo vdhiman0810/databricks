@@ -57,6 +57,20 @@ jobs:
           cat > job-settings.json <<EOF
           {
             "name": "${JOB_NAME}",
+            "email_notifications": {
+              "on_failure": ["varundhiman08@gmail.com"],
+              "on_duration_warning_threshold_exceeded": ["varundhiman08@gmail.com"],
+              "no_alert_for_skipped_runs": true
+            },
+            "health": {
+              "rules": [
+                {
+                  "metric": "RUN_DURATION_SECONDS",
+                  "operator": "GREATER_THAN",
+                  "value": 120
+                }
+              ]
+            },
             "tasks": [
               {
                 "task_key": "workflow_change_audit",
