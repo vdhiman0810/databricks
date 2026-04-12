@@ -22,5 +22,5 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: List cluster
-        run: databricks clusters list
+      - name: create the notebook folder
+        run: databricks workspace mkdirs /home/notebooks/github-oidc-demo
