@@ -1,0 +1,48 @@
+name: Databricks OIDC Multi-Env Deploy
+run-name: Deploy notebooks to dev, qa, and prod by ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-notebook:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target_env:
+          - dev
+          - qa
+          - prod
+    environment: ${{ matrix.target_env }}
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      TARGET_ENV: ${{ matrix.target_env }}
+      LOCAL_NOTEBOOK_PATH: github-oidc-demo/${{ matrix.target_env }}/demo.py
+      REMOTE_NOTEBOOK_DIR: /Shared/github-oidc-demo/${{ matrix.target_env }}
+      REMOTE_NOTEBOOK_PATH: /Shared/github-oidc-demo/${{ matrix.target_env }}/demo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate GitHub OIDC authentication
+        run: databricks current-user me
+
+      - name: Create environment folder in Databricks workspace
+        run: databricks workspace mkdirs "$REMOTE_NOTEBOOK_DIR"
+
+      - name: Import environment notebook
+        run: databricks workspace import "$LOCAL_NOTEBOOK_PATH" "$REMOTE_NOTEBOOK_PATH" --language PYTHON --overwrite
+
+      - name: Verify imported notebook
+        run: databricks workspace get-status "$REMOTE_NOTEBOOK_PATH"
