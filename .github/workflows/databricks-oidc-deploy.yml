@@ -42,7 +42,7 @@ jobs:
         run: databricks workspace mkdirs "$REMOTE_NOTEBOOK_DIR"
 
       - name: Import environment notebook
-        run: databricks workspace import "$LOCAL_NOTEBOOK_PATH" "$REMOTE_NOTEBOOK_PATH" --language PYTHON --overwrite
+        run: databricks workspace import "$REMOTE_NOTEBOOK_PATH" --file "$LOCAL_NOTEBOOK_PATH" --format SOURCE --language PYTHON --overwrite
 
       - name: Verify imported notebook
         run: databricks workspace get-status "$REMOTE_NOTEBOOK_PATH"
