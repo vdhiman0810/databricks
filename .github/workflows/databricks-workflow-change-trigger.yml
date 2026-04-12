@@ -69,7 +69,10 @@ jobs:
                     "commit_sha": "${GITHUB_SHA}"
                   }
                 },
-                "existing_cluster_id": "${DATABRICKS_CLUSTER_ID}"
+                "existing_cluster_id": "${DATABRICKS_CLUSTER_ID}",
+                "max_retries": 2,
+                "retry_on_timeout": true,
+                "timeout_seconds": 180
               }
             ],
             "max_concurrent_runs": 1
