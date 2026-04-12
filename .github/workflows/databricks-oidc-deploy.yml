@@ -20,14 +20,8 @@ permissions:
 jobs:
   deploy-notebook:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target_env:
-          - dev
-          - qa
-          - prod
-    environment: ${{ matrix.target_env }}
+    
+    environment: ${{ inputs.target_env }}
     env:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
