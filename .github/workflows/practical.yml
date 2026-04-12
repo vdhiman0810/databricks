@@ -23,4 +23,4 @@ jobs:
         uses: databricks/setup-cli@main
 
       - name: create the notebook folder
-        run: databricks workspace mkdirs /Workspace/Shared/github-oidc-demo
+        run: databricks workspace mkdirs /Workspace/Shared/github-oidc-demo/dev
