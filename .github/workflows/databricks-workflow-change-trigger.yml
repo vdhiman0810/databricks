@@ -69,7 +69,7 @@ jobs:
                     "commit_sha": "${GITHUB_SHA}"
                   }
                 },
-                "existing_cluster_id": "7405611575591318"
+                "existing_cluster_id": "${DATABRICKS_CLUSTER_ID}"
               }
             ],
             "max_concurrent_runs": 1
