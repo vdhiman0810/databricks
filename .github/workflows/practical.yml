@@ -24,3 +24,6 @@ jobs:
 
       - name: create the notebook folder
         run: databricks workspace mkdirs /Workspace/Shared/github-oidc-demo/qa
+
+      - name: create the notebook prod folder
+        run: databricks workspace mkdirs /Workspace/Shared/github-oidc-demo/prod
