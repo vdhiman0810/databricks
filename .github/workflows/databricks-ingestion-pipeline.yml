@@ -27,8 +27,9 @@ jobs:
       UC_CATALOG: test_databricks
       UC_SCHEMA: tennis
       UC_VOLUME: tennis_volume
-      REMOTE_RAW_DIR: /Volumes/${UC_CATALOG}/${UC_SCHEMA}/${UC_VOLUME}/raw
-      REMOTE_RAW_PATH: /Volumes/${UC_CATALOG}/${UC_SCHEMA}/${UC_VOLUME}/raw/customer_orders.csv
+      REMOTE_RAW_DIR: dbfs:/Volumes/${UC_CATALOG}/${UC_SCHEMA}/${UC_VOLUME}/raw
+      REMOTE_RAW_PATH: dbfs:/Volumes/${UC_CATALOG}/${UC_SCHEMA}/${UC_VOLUME}/raw/customer_orders.csv
+      REMOTE_OUTPUT_ROOT: dbfs:/Volumes/test_databricks/tennis/tennis_volume/output
       REMOTE_NOTEBOOK_DIR: /Shared/pipelines/ingestion/dev
       REMOTE_NOTEBOOK_PATH: /Shared/pipelines/ingestion/dev/01_ingest_customer_orders
       JOB_NAME: github-oidc-ingestion-dev
@@ -69,7 +70,7 @@ jobs:
                   "source": "WORKSPACE",
                   "base_parameters": {
                     "input_path": "${REMOTE_RAW_PATH}",
-                    "output_root": "dbfs:/tmp/github-ingestion/dev/output",
+                    "output_root": "${REMOTE_OUTPUT_ROOT}",
                     "pipeline_name": "customer_orders_demo"
                   }
                 },
