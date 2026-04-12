@@ -1,1 +1,102 @@
+name: Databricks Ingestion Pipeline CI/CD
+run-name: Deploy and run ingestion pipeline for ${{ github.actor }}
 
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - pipelines/ingestion/dev/**
+      - data/ingestion/dev/**
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-and-run-ingestion:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      LOCAL_NOTEBOOK_PATH: pipelines/ingestion/dev/01_ingest_customer_orders.py
+      LOCAL_DATA_PATH: data/ingestion/dev/customer_orders.csv
+      REMOTE_NOTEBOOK_DIR: /Shared/pipelines/ingestion/dev
+      REMOTE_NOTEBOOK_PATH: /Shared/pipelines/ingestion/dev/01_ingest_customer_orders
+      REMOTE_RAW_DIR: dbfs:/tmp/github-ingestion/dev/raw
+      REMOTE_RAW_PATH: dbfs:/tmp/github-ingestion/dev/raw/customer_orders.csv
+      JOB_NAME: github-oidc-ingestion-dev
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate GitHub OIDC authentication
+        run: databricks current-user me
+
+      - name: Upload sample raw data
+        run: |
+          databricks fs mkdir "$REMOTE_RAW_DIR"
+          databricks fs cp "$LOCAL_DATA_PATH" "$REMOTE_RAW_PATH" --overwrite
+
+      - name: Import ingestion notebook
+        run: |
+          databricks workspace mkdirs "$REMOTE_NOTEBOOK_DIR"
+          databricks workspace import "$REMOTE_NOTEBOOK_PATH" --file "$LOCAL_NOTEBOOK_PATH" --format SOURCE --language PYTHON --overwrite
+
+      - name: Create or update ingestion job
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > job-settings.json <<EOF
+          {
+            "name": "${JOB_NAME}",
+            "tasks": [
+              {
+                "task_key": "ingest_customer_orders",
+                "notebook_task": {
+                  "notebook_path": "${REMOTE_NOTEBOOK_PATH}",
+                  "source": "WORKSPACE",
+                  "base_parameters": {
+                    "input_path": "${REMOTE_RAW_PATH}",
+                    "output_root": "dbfs:/tmp/github-ingestion/dev/output",
+                    "pipeline_name": "customer_orders_demo"
+                  }
+                },
+                "timeout_seconds": 300,
+                "max_retries": 1
+              }
+            ],
+            "max_concurrent_runs": 1
+          }
+          EOF
+
+          EXISTING_JOB_ID=$(databricks jobs list -o json | jq -r --arg job_name "${JOB_NAME}" '
+            if type == "array" then
+              .[]
+            else
+              .jobs[]
+            end
+            | select((.settings.name // .name) == $job_name)
+            | .job_id
+          ' | head -n 1)
+
+          if [ -n "${EXISTING_JOB_ID}" ] && [ "${EXISTING_JOB_ID}" != "null" ]; then
+            jq --arg job_id "${EXISTING_JOB_ID}" '{job_id: ($job_id | tonumber), new_settings: .}' job-settings.json > job-reset.json
+            databricks jobs reset --json @job-reset.json
+            echo "JOB_ID=${EXISTING_JOB_ID}" >> "$GITHUB_ENV"
+          else
+            databricks jobs create --json @job-settings.json -o json > job-create-result.json
+            CREATED_JOB_ID=$(jq -r '.job_id' job-create-result.json)
+            echo "JOB_ID=${CREATED_JOB_ID}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Trigger ingestion job
+        run: databricks jobs run-now "$JOB_ID"
