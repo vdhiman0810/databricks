@@ -26,10 +26,10 @@ jobs:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
-      TARGET_ENV: ${{ matrix.target_env }}
-      LOCAL_NOTEBOOK_PATH: github-oidc-demo/${{ matrix.target_env }}/demo.py
-      REMOTE_NOTEBOOK_DIR: /Shared/github-oidc-demo/${{ matrix.target_env }}
-      REMOTE_NOTEBOOK_PATH: /Shared/github-oidc-demo/${{ matrix.target_env }}/demo
+      TARGET_ENV: ${{ inputs.target_env }}
+      LOCAL_NOTEBOOK_PATH: github-oidc-demo/${{ inputs.target_env }}/demo.py
+      REMOTE_NOTEBOOK_DIR: /Shared/github-oidc-demo/${{ inputs.target_env }}
+      REMOTE_NOTEBOOK_PATH: /Shared/github-oidc-demo/${{ inputs.target_env }}/demo
 
     steps:
       - name: Checkout repository
