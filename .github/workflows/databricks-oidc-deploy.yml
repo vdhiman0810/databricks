@@ -1,8 +1,17 @@
 name: Databricks OIDC Multi-Env Deploy
-run-name: Deploy notebooks to dev, qa, and prod by ${{ github.actor }}
+run-name: Deploy notebook to ${{ inputs.target_env }} by ${{ github.actor }}
 
 on:
   workflow_dispatch:
+    inputs:
+      target_env:
+        description: Target environment to deploy
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
 
 permissions:
   id-token: write
