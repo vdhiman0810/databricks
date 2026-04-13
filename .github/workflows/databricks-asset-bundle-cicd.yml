@@ -23,7 +23,6 @@ jobs:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
-      BUNDLE_ROOT: bundles/customer-orders-etl-bundle
       BUNDLE_TARGET: dev
 
     steps:
@@ -41,15 +40,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ ! -f "${BUNDLE_ROOT}/databricks.yml" ]; then
-            echo "Bundle root ${BUNDLE_ROOT} does not contain databricks.yml."
+          if [ ! -f "bundles/customer-orders-etl-bundle/databricks.yml" ]; then
+            echo "Bundle root bundles/customer-orders-etl-bundle does not contain databricks.yml."
             exit 1
           fi
 
       - name: Validate bundle
         working-directory: bundles/customer-orders-etl-bundle
+        env:
+          DATABRICKS_BUNDLE_ROOT: .
         run: databricks bundle validate --target dev
 
       - name: Deploy bundle
         working-directory: bundles/customer-orders-etl-bundle
+        env:
+          DATABRICKS_BUNDLE_ROOT: .
         run: databricks bundle deploy --target dev
