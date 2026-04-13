@@ -24,6 +24,7 @@ jobs:
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
       DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
       FUNCTION_SQL_PATH: sql/functions/tennis/get_player_tier.sql
+      FUNCTION_NAME: test_databricks.tennis.get_player_tier
 
     steps:
       - name: Checkout repository
@@ -96,7 +97,7 @@ jobs:
 
           cat > verify-request.json <<EOF
           {
-            "statement": "DESCRIBE FUNCTION EXTENDED main.tennis.get_player_tier",
+            "statement": "DESCRIBE FUNCTION EXTENDED ${FUNCTION_NAME}",
             "warehouse_id": "${DATABRICKS_WAREHOUSE_ID}",
             "wait_timeout": "50s",
             "disposition": "INLINE"
@@ -104,7 +105,16 @@ jobs:
           EOF
 
           databricks api post /api/2.0/sql/statements --json @verify-request.json > verify-response.json
+
           VERIFY_STATE=$(jq -r '.status.state' verify-response.json)
+          VERIFY_ID=$(jq -r '.statement_id' verify-response.json)
+
+          while [ "${VERIFY_STATE}" = "PENDING" ] || [ "${VERIFY_STATE}" = "RUNNING" ]; do
+            sleep 5
+            databricks api get "/api/2.0/sql/statements/${VERIFY_ID}" > verify-response.json
+            VERIFY_STATE=$(jq -r '.status.state' verify-response.json)
+            echo "Current verification state: ${VERIFY_STATE}"
+          done
 
           if [ "${VERIFY_STATE}" != "SUCCEEDED" ]; then
             echo "Function verification did not succeed."

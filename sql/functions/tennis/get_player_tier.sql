@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION main.tennis.get_player_tier(ranking INT)
+CREATE OR REPLACE FUNCTION test_databricks.tennis.get_player_tier(ranking INT)
 RETURNS STRING
 RETURN
   CASE

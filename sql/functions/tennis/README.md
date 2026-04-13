@@ -1,6 +1,6 @@
 # Tennis function example
 
-This folder contains source-controlled SQL functions for the existing `tennis` schema.
+This folder contains source-controlled SQL functions for the existing `test_databricks.tennis` schema.
 
 ## Current function
 
@@ -8,4 +8,4 @@ This folder contains source-controlled SQL functions for the existing `tennis` s
 
 ## Purpose
 
-This sample function turns a player ranking into a reusable tier label for analytics and reporting.
+This sample function converts a ranking into a reusable tennis player tier for analytics, reporting, and shared SQL logic.

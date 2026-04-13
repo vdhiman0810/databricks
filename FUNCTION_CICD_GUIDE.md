@@ -2,7 +2,7 @@
 
 ## Goal
 
-Create or update a SQL function in the existing `tennis` schema from GitHub Actions by using Databricks OIDC authentication and serverless SQL compute.
+Create or update a SQL function in the existing `test_databricks.tennis` schema from GitHub Actions by using Databricks OIDC authentication and serverless SQL compute.
 
 ## Files
 
@@ -38,5 +38,5 @@ Use your `dev` GitHub Environment and configure:
 
 ## Notes
 
-- This workflow assumes the `main.tennis` schema already exists.
+- This workflow assumes the `test_databricks.tennis` schema already exists.
 - The OIDC identity must have permission to use the target SQL warehouse and create functions in the target schema.

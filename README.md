@@ -196,7 +196,7 @@ This workflow creates or updates a Databricks job-only compute policy using the 
 
 ## SQL function CI/CD example
 
-There is also a workflow for deploying a SQL function into the existing `tennis` schema:
+There is also a workflow for deploying a SQL function into the existing `test_databricks.tennis` schema:
 
 - Workflow: `.github/workflows/databricks-function-cicd.yml`
 - SQL file: `sql/functions/tennis/get_player_tier.sql`
