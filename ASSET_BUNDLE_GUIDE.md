@@ -15,6 +15,8 @@ Provide one concrete Databricks Asset Bundle example in this repository so jobs 
 
 This bundle packages the existing customer orders ETL notebook as a deployable Databricks job.
 
+For bundle compatibility, the example keeps the deployable notebook inside the bundle itself under `src/`.
+
 It helps when:
 
 - a team wants the same job definition in `dev` and `prod`

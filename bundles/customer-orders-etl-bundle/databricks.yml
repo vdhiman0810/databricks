@@ -4,11 +4,6 @@ bundle:
 include:
   - resources/*.yml
 
-sync:
-  paths:
-    - .
-    - ../../pipelines/etl/dev
-
 targets:
   dev:
     mode: development

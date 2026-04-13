@@ -6,7 +6,7 @@ resources:
       tasks:
         - task_key: customer_orders_etl
           notebook_task:
-            notebook_path: ../../pipelines/etl/dev/01_customer_orders_etl.py
+            notebook_path: ../src/01_customer_orders_etl.py
             base_parameters:
               input_path: dbfs:/Volumes/test_databricks/tennis/tennis_volume/etl/raw/customer_orders_raw.csv
               output_root: dbfs:/Volumes/test_databricks/tennis/tennis_volume/etl/output
