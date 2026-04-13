@@ -1,0 +1,19 @@
+resources:
+  jobs:
+    customer_orders_etl_job:
+      name: customer-orders-etl-${bundle.target}
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: customer_orders_etl
+          notebook_task:
+            notebook_path: ../../../pipelines/etl/dev/01_customer_orders_etl.py
+            base_parameters:
+              input_path: dbfs:/Volumes/test_databricks/tennis/tennis_volume/etl/raw/customer_orders_raw.csv
+              output_root: dbfs:/Volumes/test_databricks/tennis/tennis_volume/etl/output
+              pipeline_name: customer_orders_etl_${bundle.target}
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+

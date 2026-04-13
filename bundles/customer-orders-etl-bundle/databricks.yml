@@ -1,0 +1,20 @@
+bundle:
+  name: customer-orders-etl
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: ${env.DATABRICKS_HOST}
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+
+  prod:
+    mode: production
+    workspace:
+      host: ${env.DATABRICKS_HOST}
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+

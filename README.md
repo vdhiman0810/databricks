@@ -14,6 +14,8 @@ This repository deploys a Databricks notebook to a selected `dev`, `qa`, or `pro
 - `.github/workflows/databricks-keyvault-secret-scope-cicd.yml`
 - `.github/workflows/databricks-cluster-policy-cicd.yml`
 - `.github/workflows/databricks-function-cicd.yml`
+- `.github/workflows/databricks-asset-bundle-cicd.yml`
+- `bundles/customer-orders-etl-bundle/databricks.yml`
 - `.github/env/dev.env.sample`
 - `.github/env/qa.env.sample`
 - `.github/env/prod.env.sample`
@@ -34,6 +36,7 @@ This repository deploys a Databricks notebook to a selected `dev`, `qa`, or `pro
 - `CLUSTER_POLICY_GUIDE.md`
 - `sql/functions/tennis/get_player_tier.sql`
 - `FUNCTION_CICD_GUIDE.md`
+- `ASSET_BUNDLE_GUIDE.md`
 - `secret-scope/dev/README.md`
 - `secret-scope-keyvault/dev/README.md`
 - `SECRET_SCOPE_GUIDE.md`
@@ -203,3 +206,14 @@ There is also a workflow for deploying a SQL function into the existing `test_da
 - Guide: `FUNCTION_CICD_GUIDE.md`
 
 This workflow runs the SQL definition on an existing serverless SQL warehouse so the function can be versioned and deployed through CI/CD instead of being managed manually in the Databricks SQL editor.
+
+## Asset Bundle example
+
+There is also a Databricks Asset Bundle example for packaging an ETL job as code:
+
+- Workflow: `.github/workflows/databricks-asset-bundle-cicd.yml`
+- Bundle: `bundles/customer-orders-etl-bundle/databricks.yml`
+- Resource: `bundles/customer-orders-etl-bundle/resources/customer_orders_etl_job.yml`
+- Guide: `ASSET_BUNDLE_GUIDE.md`
+
+This example shows how to keep a Databricks job definition in source control so it can be validated and deployed consistently across environments instead of being created manually in the Databricks UI.

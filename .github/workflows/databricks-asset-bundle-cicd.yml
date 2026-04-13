@@ -1,0 +1,55 @@
+name: Databricks Asset Bundle CI/CD
+run-name: Validate and deploy asset bundle for ${{ github.actor }}
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - bundles/customer-orders-etl-bundle/**
+      - pipelines/etl/dev/01_customer_orders_etl.py
+      - .github/workflows/databricks-asset-bundle-cicd.yml
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-asset-bundle:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      BUNDLE_ROOT: bundles/customer-orders-etl-bundle
+      BUNDLE_TARGET: dev
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate GitHub OIDC authentication
+        run: databricks current-user me
+
+      - name: Validate bundle files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "${BUNDLE_ROOT}/databricks.yml" ]; then
+            echo "Bundle root ${BUNDLE_ROOT} does not contain databricks.yml."
+            exit 1
+          fi
+
+      - name: Validate bundle
+        working-directory: bundles/customer-orders-etl-bundle
+        run: databricks bundle validate --target dev
+
+      - name: Deploy bundle
+        working-directory: bundles/customer-orders-etl-bundle
+        run: databricks bundle deploy --target dev
