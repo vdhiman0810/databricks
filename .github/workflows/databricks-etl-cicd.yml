@@ -1,13 +1,14 @@
-name: Databricks Workflow Change Trigger
-run-name: Trigger Databricks job because a workflow changed
+name: Databricks ETL CI/CD
+run-name: Deploy and run ETL pipeline for ${{ github.actor }}
 
 on:
   push:
     branches:
       - main
     paths:
-      - .github/workflows/**
-      - github-oidc-workflow-audit/dev/**
+      - pipelines/etl/dev/**
+      - data/etl/dev/**
+      - .github/workflows/databricks-etl-cicd.yml
   workflow_dispatch:
 
 permissions:
@@ -15,18 +16,20 @@ permissions:
   contents: read
 
 jobs:
-  deploy-and-run-workflow-audit-job:
+  deploy-and-run-etl:
     runs-on: ubuntu-latest
     environment: dev
     env:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
-      DATABRICKS_CLUSTER_ID: ${{ vars.DATABRICKS_CLUSTER_ID }}
-      LOCAL_NOTEBOOK_PATH: github-oidc-workflow-audit/dev/workflow_change_audit.py
-      REMOTE_NOTEBOOK_DIR: /Shared/github-oidc-workflow-audit/dev
-      REMOTE_NOTEBOOK_PATH: /Shared/github-oidc-workflow-audit/dev/workflow_change_audit
-      JOB_NAME: github-oidc-workflow-change-audit-dev
+      LOCAL_NOTEBOOK_PATH: pipelines/etl/dev/01_customer_orders_etl.py
+      LOCAL_DATA_PATH: data/etl/dev/customer_orders_raw.csv
+      REMOTE_NOTEBOOK_DIR: /Shared/pipelines/etl/dev
+      REMOTE_NOTEBOOK_PATH: /Shared/pipelines/etl/dev/01_customer_orders_etl
+      REMOTE_RAW_PATH: dbfs:/Volumes/test_databricks/tennis/tennis_volume/etl/raw/customer_orders_raw.csv
+      REMOTE_OUTPUT_ROOT: dbfs:/Volumes/test_databricks/tennis/tennis_volume/etl/output
+      JOB_NAME: github-oidc-etl-dev
 
     steps:
       - name: Checkout repository
@@ -38,55 +41,36 @@ jobs:
       - name: Validate GitHub OIDC authentication
         run: databricks current-user me
 
-      - name: Create workspace folder
-        run: databricks workspace mkdirs "$REMOTE_NOTEBOOK_DIR"
+      - name: Upload raw ETL input file
+        run: databricks fs cp "$LOCAL_DATA_PATH" "$REMOTE_RAW_PATH" --overwrite
 
-      - name: Import notebook
-        run: databricks workspace import "$REMOTE_NOTEBOOK_PATH" --file "$LOCAL_NOTEBOOK_PATH" --format SOURCE --language PYTHON --overwrite
+      - name: Import ETL notebook
+        run: |
+          databricks workspace mkdirs "$REMOTE_NOTEBOOK_DIR"
+          databricks workspace import "$REMOTE_NOTEBOOK_PATH" --file "$LOCAL_NOTEBOOK_PATH" --format SOURCE --language PYTHON --overwrite
 
-      - name: Create or update Databricks job
+      - name: Create or update ETL job
         shell: bash
         run: |
           set -euo pipefail
 
-          if [ -z "${DATABRICKS_CLUSTER_ID:-}" ]; then
-            echo "DATABRICKS_CLUSTER_ID is not set in the dev GitHub Environment."
-            exit 1
-          fi
-
           cat > job-settings.json <<EOF
           {
             "name": "${JOB_NAME}",
-            "email_notifications": {
-              "on_failure": ["varundhiman08@gmail.com"],
-              "on_duration_warning_threshold_exceeded": ["varundhiman08@gmail.com"],
-              "no_alert_for_skipped_runs": true
-            },
-            "health": {
-              "rules": [
-                {
-                  "metric": "RUN_DURATION_SECONDS",
-                  "operator": "GREATER_THAN",
-                  "value": 120
-                }
-              ]
-            },
             "tasks": [
               {
-                "task_key": "workflow_change_audit",
+                "task_key": "customer_orders_etl",
                 "notebook_task": {
                   "notebook_path": "${REMOTE_NOTEBOOK_PATH}",
                   "source": "WORKSPACE",
                   "base_parameters": {
-                    "trigger_source": "github_workflow_change",
-                    "branch": "${GITHUB_REF_NAME}",
-                    "commit_sha": "${GITHUB_SHA}"
+                    "input_path": "${REMOTE_RAW_PATH}",
+                    "output_root": "${REMOTE_OUTPUT_ROOT}",
+                    "pipeline_name": "customer_orders_etl_demo"
                   }
                 },
-                "existing_cluster_id": "${DATABRICKS_CLUSTER_ID}",
-                "max_retries": 2,
-                "retry_on_timeout": true,
-                "timeout_seconds": 180
+                "timeout_seconds": 300,
+                "max_retries": 1
               }
             ],
             "max_concurrent_runs": 1
@@ -113,5 +97,5 @@ jobs:
             echo "JOB_ID=${CREATED_JOB_ID}" >> "$GITHUB_ENV"
           fi
 
-      - name: Trigger Databricks job
+      - name: Trigger ETL job
         run: databricks jobs run-now "$JOB_ID"

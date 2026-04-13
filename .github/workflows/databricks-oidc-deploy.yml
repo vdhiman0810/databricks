@@ -20,16 +20,17 @@ permissions:
 jobs:
   deploy-notebook:
     runs-on: ubuntu-latest
-    
     environment: ${{ inputs.target_env }}
     env:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_CLUSTER_ID: ${{ vars.DATABRICKS_CLUSTER_ID }}
       TARGET_ENV: ${{ inputs.target_env }}
       LOCAL_NOTEBOOK_PATH: github-oidc-demo/${{ inputs.target_env }}/demo.py
       REMOTE_NOTEBOOK_DIR: /Shared/github-oidc-demo/${{ inputs.target_env }}
       REMOTE_NOTEBOOK_PATH: /Shared/github-oidc-demo/${{ inputs.target_env }}/demo
+      JOB_NAME: github-oidc-demo-${{ inputs.target_env }}
 
     steps:
       - name: Checkout repository
@@ -49,3 +50,58 @@ jobs:
 
       - name: Verify imported notebook
         run: databricks workspace get-status "$REMOTE_NOTEBOOK_PATH"
+
+      - name: Create or update Databricks job
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DATABRICKS_CLUSTER_ID:-}" ]; then
+            echo "DATABRICKS_CLUSTER_ID is not set in the selected GitHub Environment."
+            exit 1
+          fi
+
+          cat > job-settings.json <<EOF
+          {
+            "name": "${JOB_NAME}",
+            "tasks": [
+              {
+                "task_key": "run_${TARGET_ENV}_notebook",
+                "notebook_task": {
+                  "notebook_path": "${REMOTE_NOTEBOOK_PATH}",
+                  "source": "WORKSPACE",
+                  "base_parameters": {
+                    "env": "${TARGET_ENV}",
+                    "catalog": "main",
+                    "data_source": "sales_${TARGET_ENV}"
+                  }
+                },
+                "existing_cluster_id": "${DATABRICKS_CLUSTER_ID}"
+              }
+            ],
+            "max_concurrent_runs": 1
+          }
+          EOF
+
+          EXISTING_JOB_ID=$(databricks jobs list -o json | jq -r --arg job_name "${JOB_NAME}" '
+            if type == "array" then
+              .[]
+            else
+              .jobs[]
+            end
+            | select((.settings.name // .name) == $job_name)
+            | .job_id
+          ' | head -n 1)
+
+          if [ -n "${EXISTING_JOB_ID}" ] && [ "${EXISTING_JOB_ID}" != "null" ]; then
+            jq --arg job_id "${EXISTING_JOB_ID}" '{job_id: ($job_id | tonumber), new_settings: .}' job-settings.json > job-reset.json
+            databricks jobs reset --json @job-reset.json
+            echo "JOB_ID=${EXISTING_JOB_ID}" >> "$GITHUB_ENV"
+          else
+            databricks jobs create --json @job-settings.json -o json > job-create-result.json
+            CREATED_JOB_ID=$(jq -r '.job_id' job-create-result.json)
+            echo "JOB_ID=${CREATED_JOB_ID}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Trigger Databricks job
+        run: databricks jobs run-now "$JOB_ID"

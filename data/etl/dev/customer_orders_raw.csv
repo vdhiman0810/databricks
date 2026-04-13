@@ -1,0 +1,7 @@
+order_id,customer_id,order_date,product_name,quantity,unit_price
+2001,cust-100,2026-04-01,Laptop Sleeve,2,25.50
+2002,cust-200,2026-04-02,Wireless Mouse,1,18.00
+2003,cust-100,2026-04-03,USB-C Hub,1,45.00
+2004,cust-300,2026-04-03,Keyboard,3,32.25
+2005,cust-400,2026-04-04,Monitor Stand,1,64.99
+2005,cust-400,2026-04-04,Monitor Stand,1,64.99
