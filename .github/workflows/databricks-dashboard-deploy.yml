@@ -1,0 +1,42 @@
+name: Databricks Silver Dashboard Deploy
+run-name: Deploy silver dashboard for ${{ github.actor }}
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - dashboards/ingestion/dev/**
+      - .github/workflows/databricks-dashboard-deploy.yml
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-dashboard:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      LOCAL_DASHBOARD_NOTEBOOK: dashboards/ingestion/dev/01_silver_orders_dashboard.py
+      REMOTE_DASHBOARD_DIR: /Shared/dashboards/ingestion/dev
+      REMOTE_DASHBOARD_NOTEBOOK: /Shared/dashboards/ingestion/dev/01_silver_orders_dashboard
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate GitHub OIDC authentication
+        run: databricks current-user me
+
+      - name: Import dashboard notebook
+        run: |
+          databricks workspace mkdirs "$REMOTE_DASHBOARD_DIR"
+          databricks workspace import "$REMOTE_DASHBOARD_NOTEBOOK" --file "$LOCAL_DASHBOARD_NOTEBOOK" --format SOURCE --language PYTHON --overwrite
