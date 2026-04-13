@@ -47,3 +47,5 @@ It:
 - authenticates to Databricks with GitHub OIDC
 - validates the asset bundle
 - deploys the bundle to the `dev` target
+
+The bundle example intentionally relies on the Databricks CLI environment variables provided by the workflow, such as `DATABRICKS_HOST`, rather than trying to interpolate the host inside `databricks.yml`.

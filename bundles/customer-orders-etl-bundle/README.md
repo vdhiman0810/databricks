@@ -43,5 +43,5 @@ databricks bundle run customer_orders_etl_job --target dev
 ## Notes
 
 - The bundle uses the existing ETL notebook and existing volume paths already referenced in the notebook.
-- Set `DATABRICKS_HOST` in your shell environment before running bundle commands.
+- Set `DATABRICKS_HOST` in your shell environment before running bundle commands. The bundle intentionally relies on CLI environment authentication instead of embedding the workspace host in `databricks.yml`.
 - Authentication can use the same Databricks OIDC or profile-based setup you already use elsewhere.
