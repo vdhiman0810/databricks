@@ -1,0 +1,115 @@
+name: Databricks Function CI/CD
+run-name: Deploy SQL function for ${{ github.actor }}
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - sql/functions/tennis/**
+      - .github/workflows/databricks-function-cicd.yml
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-function:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_WAREHOUSE_ID: ${{ vars.DATABRICKS_WAREHOUSE_ID }}
+      FUNCTION_SQL_PATH: sql/functions/tennis/get_player_tier.sql
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate GitHub OIDC authentication
+        run: databricks current-user me
+
+      - name: Validate required configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DATABRICKS_WAREHOUSE_ID:-}" ]; then
+            echo "DATABRICKS_WAREHOUSE_ID is not set in the selected GitHub Environment."
+            exit 1
+          fi
+
+          if [ ! -f "${FUNCTION_SQL_PATH}" ]; then
+            echo "Function SQL file ${FUNCTION_SQL_PATH} was not found."
+            exit 1
+          fi
+
+      - name: Start serverless SQL warehouse
+        run: databricks warehouses start "$DATABRICKS_WAREHOUSE_ID"
+
+      - name: Deploy function with serverless SQL warehouse
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SQL_STATEMENT=$(jq -Rs . < "$FUNCTION_SQL_PATH")
+
+          cat > statement-request.json <<EOF
+          {
+            "statement": ${SQL_STATEMENT},
+            "warehouse_id": "${DATABRICKS_WAREHOUSE_ID}",
+            "wait_timeout": "50s",
+            "disposition": "INLINE"
+          }
+          EOF
+
+          databricks api post /api/2.0/sql/statements --json @statement-request.json > statement-response.json
+
+          STATEMENT_ID=$(jq -r '.statement_id' statement-response.json)
+          STATE=$(jq -r '.status.state' statement-response.json)
+
+          echo "Submitted SQL statement ${STATEMENT_ID} with initial state ${STATE}."
+
+          while [ "${STATE}" = "PENDING" ] || [ "${STATE}" = "RUNNING" ]; do
+            sleep 5
+            databricks api get "/api/2.0/sql/statements/${STATEMENT_ID}" > statement-response.json
+            STATE=$(jq -r '.status.state' statement-response.json)
+            echo "Current statement state: ${STATE}"
+          done
+
+          if [ "${STATE}" != "SUCCEEDED" ]; then
+            echo "Function deployment failed."
+            jq . statement-response.json
+            exit 1
+          fi
+
+      - name: Verify function
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > verify-request.json <<EOF
+          {
+            "statement": "DESCRIBE FUNCTION EXTENDED main.tennis.get_player_tier",
+            "warehouse_id": "${DATABRICKS_WAREHOUSE_ID}",
+            "wait_timeout": "50s",
+            "disposition": "INLINE"
+          }
+          EOF
+
+          databricks api post /api/2.0/sql/statements --json @verify-request.json > verify-response.json
+          VERIFY_STATE=$(jq -r '.status.state' verify-response.json)
+
+          if [ "${VERIFY_STATE}" != "SUCCEEDED" ]; then
+            echo "Function verification did not succeed."
+            jq . verify-response.json
+            exit 1
+          fi
+
+          jq . verify-response.json

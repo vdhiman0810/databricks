@@ -13,6 +13,7 @@ This repository deploys a Databricks notebook to a selected `dev`, `qa`, or `pro
 - `.github/workflows/databricks-secret-scope-cicd.yml`
 - `.github/workflows/databricks-keyvault-secret-scope-cicd.yml`
 - `.github/workflows/databricks-cluster-policy-cicd.yml`
+- `.github/workflows/databricks-function-cicd.yml`
 - `.github/env/dev.env.sample`
 - `.github/env/qa.env.sample`
 - `.github/env/prod.env.sample`
@@ -31,6 +32,8 @@ This repository deploys a Databricks notebook to a selected `dev`, `qa`, or `pro
 - `ETL_PIPELINE_GUIDE.md`
 - `cluster-policies/dev/shared-job-policy.json`
 - `CLUSTER_POLICY_GUIDE.md`
+- `sql/functions/tennis/get_player_tier.sql`
+- `FUNCTION_CICD_GUIDE.md`
 - `secret-scope/dev/README.md`
 - `secret-scope-keyvault/dev/README.md`
 - `SECRET_SCOPE_GUIDE.md`
@@ -190,3 +193,13 @@ There is also a workflow for managing a Databricks compute policy from source co
 - Guide: `CLUSTER_POLICY_GUIDE.md`
 
 This workflow creates or updates a Databricks job-only compute policy using the JSON definition stored in the repository.
+
+## SQL function CI/CD example
+
+There is also a workflow for deploying a SQL function into the existing `tennis` schema:
+
+- Workflow: `.github/workflows/databricks-function-cicd.yml`
+- SQL file: `sql/functions/tennis/get_player_tier.sql`
+- Guide: `FUNCTION_CICD_GUIDE.md`
+
+This workflow runs the SQL definition on an existing serverless SQL warehouse so the function can be versioned and deployed through CI/CD instead of being managed manually in the Databricks SQL editor.
