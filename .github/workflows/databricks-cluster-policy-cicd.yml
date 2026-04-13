@@ -1,0 +1,96 @@
+name: Databricks Cluster Policy CI/CD
+run-name: Create or update cluster policy for ${{ github.actor }}
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - cluster-policies/dev/**
+      - .github/workflows/databricks-cluster-policy-cicd.yml
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-cluster-policy:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      POLICY_NAME: ${{ vars.DATABRICKS_CLUSTER_POLICY_NAME }}
+      POLICY_DESCRIPTION: ${{ vars.DATABRICKS_CLUSTER_POLICY_DESCRIPTION }}
+      POLICY_MAX_CLUSTERS_PER_USER: ${{ vars.DATABRICKS_POLICY_MAX_CLUSTERS_PER_USER }}
+      LOCAL_POLICY_PATH: cluster-policies/dev/shared-job-policy.json
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validate GitHub OIDC authentication
+        run: databricks current-user me
+
+      - name: Validate required configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${POLICY_NAME:-}" ]; then
+            echo "DATABRICKS_CLUSTER_POLICY_NAME is not set in the selected GitHub Environment."
+            exit 1
+          fi
+
+          if [ ! -f "${LOCAL_POLICY_PATH}" ]; then
+            echo "Policy file ${LOCAL_POLICY_PATH} was not found."
+            exit 1
+          fi
+
+      - name: Create or update cluster policy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          POLICY_DEFINITION=$(jq -c . "${LOCAL_POLICY_PATH}")
+
+          EXISTING_POLICY_ID=$(databricks cluster-policies list -o json | jq -r --arg policy_name "${POLICY_NAME}" '
+            if type == "array" then
+              .[]
+            else
+              .policies[]?
+            end
+            | select(.name == $policy_name)
+            | .policy_id
+          ' | head -n 1)
+
+          if [ -n "${EXISTING_POLICY_ID}" ] && [ "${EXISTING_POLICY_ID}" != "null" ]; then
+            databricks cluster-policies edit "${EXISTING_POLICY_ID}" \
+              --name "${POLICY_NAME}" \
+              --definition "${POLICY_DEFINITION}" \
+              --description "${POLICY_DESCRIPTION:-Managed by GitHub Actions}" \
+              --max-clusters-per-user "${POLICY_MAX_CLUSTERS_PER_USER:-2}"
+            echo "Updated cluster policy ${POLICY_NAME} (${EXISTING_POLICY_ID})."
+          else
+            databricks cluster-policies create \
+              --name "${POLICY_NAME}" \
+              --definition "${POLICY_DEFINITION}" \
+              --description "${POLICY_DESCRIPTION:-Managed by GitHub Actions}" \
+              --max-clusters-per-user "${POLICY_MAX_CLUSTERS_PER_USER:-2}" \
+              -o json > cluster-policy-create-result.json
+
+            CREATED_POLICY_ID=$(jq -r '.policy_id' cluster-policy-create-result.json)
+            echo "Created cluster policy ${POLICY_NAME} (${CREATED_POLICY_ID})."
+          fi
+
+      - name: Verify cluster policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          databricks cluster-policies list
+

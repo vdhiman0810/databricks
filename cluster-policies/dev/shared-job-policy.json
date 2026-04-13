@@ -1,0 +1,71 @@
+{
+  "cluster_type": {
+    "type": "fixed",
+    "value": "job",
+    "hidden": true
+  },
+  "spark_version": {
+    "type": "fixed",
+    "value": "auto:latest-lts",
+    "hidden": true
+  },
+  "runtime_engine": {
+    "type": "fixed",
+    "value": "PHOTON",
+    "hidden": true
+  },
+  "instance_pool_id": {
+    "type": "forbidden",
+    "hidden": true
+  },
+  "driver_instance_pool_id": {
+    "type": "forbidden",
+    "hidden": true
+  },
+  "node_type_id": {
+    "type": "allowlist",
+    "values": [
+      "Standard_DS3_v2",
+      "Standard_DS4_v2"
+    ],
+    "defaultValue": "Standard_DS3_v2"
+  },
+  "driver_node_type_id": {
+    "type": "fixed",
+    "value": "Standard_DS3_v2",
+    "hidden": true
+  },
+  "num_workers": {
+    "type": "range",
+    "minValue": 1,
+    "maxValue": 4,
+    "defaultValue": 2
+  },
+  "autotermination_minutes": {
+    "type": "fixed",
+    "value": 30,
+    "hidden": true
+  },
+  "dbus_per_hour": {
+    "type": "range",
+    "maxValue": 20
+  },
+  "custom_tags.Environment": {
+    "type": "fixed",
+    "value": "dev"
+  },
+  "custom_tags.Owner": {
+    "type": "unlimited",
+    "defaultValue": "data-team"
+  },
+  "workload_type.clients.jobs": {
+    "type": "fixed",
+    "value": true,
+    "hidden": true
+  },
+  "workload_type.clients.notebooks": {
+    "type": "fixed",
+    "value": false,
+    "hidden": true
+  }
+}
