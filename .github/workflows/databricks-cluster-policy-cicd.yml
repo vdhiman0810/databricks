@@ -22,9 +22,9 @@ jobs:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
-      POLICY_NAME: ${{ vars.DATABRICKS_CLUSTER_POLICY_NAME }}
-      POLICY_DESCRIPTION: ${{ vars.DATABRICKS_CLUSTER_POLICY_DESCRIPTION }}
-      POLICY_MAX_CLUSTERS_PER_USER: ${{ vars.DATABRICKS_POLICY_MAX_CLUSTERS_PER_USER }}
+      POLICY_NAME: shared-job-policy-dev
+      POLICY_DESCRIPTION: Managed by GitHub Actions for shared job compute
+      POLICY_MAX_CLUSTERS_PER_USER: 2
       LOCAL_POLICY_PATH: cluster-policies/dev/shared-job-policy.json
 
     steps:
@@ -93,4 +93,3 @@ jobs:
         run: |
           set -euo pipefail
           databricks cluster-policies list
-
