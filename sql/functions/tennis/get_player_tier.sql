@@ -5,5 +5,6 @@ RETURN
     WHEN ranking <= 10 THEN 'Elite'
     WHEN ranking <= 50 THEN 'Pro'
     WHEN ranking <= 200 THEN 'Competitive'
+    WHEN ranking <= 500 THEN 'Amateur'
     ELSE 'Developing'
   END;
