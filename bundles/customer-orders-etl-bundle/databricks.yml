@@ -7,7 +7,7 @@ include:
 sync:
   paths:
     - .
-    - ../../pipelines/etl/dev/01_customer_orders_etl.py
+    - ../../pipelines/etl/dev
 
 targets:
   dev:
