@@ -11,6 +11,7 @@ This repository deploys a Databricks notebook to a selected `dev`, `qa`, or `pro
 - `.github/workflows/databricks-dashboard-deploy.yml`
 - `.github/workflows/databricks-etl-cicd.yml`
 - `.github/workflows/databricks-secret-scope-cicd.yml`
+- `.github/workflows/databricks-keyvault-secret-scope-cicd.yml`
 - `.github/env/dev.env.sample`
 - `.github/env/qa.env.sample`
 - `.github/env/prod.env.sample`
@@ -28,7 +29,9 @@ This repository deploys a Databricks notebook to a selected `dev`, `qa`, or `pro
 - `data/etl/dev/customer_orders_raw.csv`
 - `ETL_PIPELINE_GUIDE.md`
 - `secret-scope/dev/README.md`
+- `secret-scope-keyvault/dev/README.md`
 - `SECRET_SCOPE_GUIDE.md`
+- `KEYVAULT_SECRET_SCOPE_GUIDE.md`
 
 ## GitHub environment configuration
 
@@ -164,3 +167,13 @@ There is also a secret scope CI/CD example:
 - Guide: `SECRET_SCOPE_GUIDE.md`
 
 This workflow creates a Databricks-backed secret scope, optionally adds a sample secret from GitHub Secrets, and can grant scope ACLs.
+
+## Azure Key Vault-backed secret scope example
+
+There is also a workflow for linking Databricks to an already existing Azure Key Vault:
+
+- Workflow: `.github/workflows/databricks-keyvault-secret-scope-cicd.yml`
+- Marker folder: `secret-scope-keyvault/dev/`
+- Guide: `KEYVAULT_SECRET_SCOPE_GUIDE.md`
+
+This workflow creates an Azure Key Vault-backed Databricks secret scope. The actual secret values continue to live in Azure Key Vault and must be managed there.
